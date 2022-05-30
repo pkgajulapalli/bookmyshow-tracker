@@ -10,11 +10,11 @@ import pyttsx3
 
 
 engine = pyttsx3.init()
-logging.basicConfig()
 logging.root.setLevel(logging.INFO)
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(sys.argv[0].split('.')[0])
-log.setLevel(logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
 
 sleep_time_in_secs = 60
 
@@ -56,12 +56,12 @@ def track_tickets(movie_name):
             engine.say('Found movie')
             engine.runAndWait()
             exit(0)
-    log.info('Movie is not available yet. Will try again in %d secs' % sleep_time_in_secs)
+    logging.info('Movie is not available yet. Will try again in %d secs' % sleep_time_in_secs)
     time.sleep(sleep_time_in_secs)
     track_tickets(movie_name)
 
 
 if __name__ == '__main__':
     movie_name = sys.argv[1].lower()
-    log.info('Looking for movie: ' + movie_name)
+    logging.info('Looking for movie: ' + movie_name)
     track_tickets(movie_name)
