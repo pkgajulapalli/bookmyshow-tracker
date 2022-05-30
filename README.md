@@ -9,7 +9,7 @@ $ pip install -r requirements.txt
 ```
 
 ### Usage
-1. Update movie url page in `get_movie_url` method in [bookmyshow_tracker.py](bookmyshow_tracker.py) file and then run following command.
 ```shell
-python bookmyshow_tracker.py MOVIE\ NAME
+$ python bookmyshow_tracker.py -m MOVIE_NAME -u BOOK_MY_SHOW_LINK
+# sample book my show link - https://in.bookmyshow.com/buytickets/pvr-soul-spirit-central-mall-bellandur/cinema-bang-CXBL-MT/20220603
 ```

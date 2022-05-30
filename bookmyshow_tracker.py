@@ -1,6 +1,6 @@
+import argparse
 import json
 import logging
-import sys
 import time
 
 from bs4 import BeautifulSoup
@@ -16,12 +16,16 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S')
 
-sleep_time_in_secs = 60
-
-
-def get_movie_url():
-    # Update this url
-    return 'https://in.bookmyshow.com/buytickets/pvr-soul-spirit-central-mall-bellandur/cinema-bang-CXBL-MT/20220603'
+parser = argparse.ArgumentParser(description='Track for ticket availability in BookMyShow.')
+parser.add_argument('-s', '--sleep_time_in_secs', dest='sleep_time_in_secs', type=int, default=60,
+                    help='sleep time between retries in seconds')
+requiredNamed = parser.add_argument_group('required named arguments')
+requiredNamed.add_argument('-m', '--movie_name', dest='movie_name', type=str, help='Name of the movie to search for',
+                           required=True)
+requiredNamed.add_argument('-u', '--url', dest='movie_url', type=str, required=True,
+                           help='URL of the movie theater for the required date. '
+                                'Eg: https://in.bookmyshow.com/bengaluru/cinemas/pvr-forum-mall-4dx-koramangala/PFKM/'
+                                '20220531',)
 
 
 def get_headers():
@@ -33,7 +37,6 @@ def get_headers():
 
 
 def get_show_details():
-    movie_url = get_movie_url()
     response = requests.request('GET', movie_url, headers=get_headers(), data={})
     assert response.status_code == 200
     page_content = BeautifulSoup(response.content, features='lxml')
@@ -44,10 +47,12 @@ def get_show_details():
             for line in show_details_text.splitlines():
                 if line.__contains__('var UAPI'):
                     show_data_line = line
-                    return json.loads(json.loads(show_data_line.split('JSON.parse(')[1].split(');')[0]).replace("\'", ""))
+                    return json.loads(json.loads(show_data_line.split('JSON.parse(')[1].split(');')[0]).
+                                      replace("\'", ""))
     return {}
 
 
+# noinspection PyShadowingNames
 def track_tickets(movie_name):
     show_details_json = get_show_details()
     events = show_details_json.get('ShowDetails')[0].get('Event')
@@ -62,6 +67,9 @@ def track_tickets(movie_name):
 
 
 if __name__ == '__main__':
-    movie_name = sys.argv[1].lower()
+    args = parser.parse_args()
+    movie_name = args.movie_name.lower()
+    movie_url = args.movie_url
+    sleep_time_in_secs = args.sleep_time_in_secs
     logging.info('Looking for movie: ' + movie_name)
     track_tickets(movie_name)
