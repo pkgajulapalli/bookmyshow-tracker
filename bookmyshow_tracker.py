@@ -26,6 +26,8 @@ requiredNamed.add_argument('-u', '--url', dest='movie_url', type=str, required=T
                            help='URL of the movie theater for the required date. '
                                 'Eg: https://in.bookmyshow.com/bengaluru/cinemas/pvr-forum-mall-4dx-koramangala/PFKM/'
                                 '20220531',)
+requiredNamed.add_argument('-c', '--max_connection_timeouts', dest='max_connection_timeouts', type=int, default=10,
+                           help='Maximum number of connection timeouts before failing')
 
 
 def get_headers():
@@ -52,18 +54,30 @@ def get_show_details():
     return {}
 
 
+def say(text):
+    engine.say(text)
+    engine.runAndWait()
+
+
 # noinspection PyShadowingNames
-def track_tickets(movie_name):
-    show_details_json = get_show_details()
-    events = show_details_json.get('ShowDetails')[0].get('Event')
-    for event in events:
-        if str(event.get('EventTitle')).lower().__contains__(movie_name):
-            engine.say('Found movie')
-            engine.runAndWait()
-            exit(0)
-    logging.info('Movie is not available yet. Will try again in %d secs' % sleep_time_in_secs)
-    time.sleep(sleep_time_in_secs)
-    track_tickets(movie_name)
+def track_tickets(movie_name, connection_timeouts=0):
+    try:
+        show_details_json = get_show_details()
+        events = show_details_json.get('ShowDetails')[0].get('Event')
+        for event in events:
+            if str(event.get('EventTitle')).lower().__contains__(movie_name):
+                say('Found movie')
+                exit(0)
+        logging.info('Movie is not available yet. Will try again in %d secs' % sleep_time_in_secs)
+        time.sleep(sleep_time_in_secs)
+        track_tickets(movie_name)
+    except requests.exceptions.ConnectionError as e:
+        logging.error(e)
+        if connection_timeouts >= max_connection_timeouts:
+            say('Not able to connect to BookMyShow')
+            exit(1)
+        time.sleep(sleep_time_in_secs)
+        track_tickets(movie_name, connection_timeouts + 1)
 
 
 if __name__ == '__main__':
@@ -71,5 +85,6 @@ if __name__ == '__main__':
     movie_name = args.movie_name.lower()
     movie_url = args.movie_url
     sleep_time_in_secs = args.sleep_time_in_secs
+    max_connection_timeouts = args.max_connection_timeouts
     logging.info('Looking for movie: ' + movie_name)
     track_tickets(movie_name)
