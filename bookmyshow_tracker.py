@@ -8,6 +8,7 @@ import requests
 
 import pyttsx3
 
+from email_utility import send_email
 
 engine = pyttsx3.init()
 logging.root.setLevel(logging.INFO)
@@ -19,6 +20,8 @@ logging.basicConfig(
 parser = argparse.ArgumentParser(description='Track for ticket availability in BookMyShow.')
 parser.add_argument('-s', '--sleep_time_in_secs', dest='sleep_time_in_secs', type=int, default=60,
                     help='sleep time between retries in seconds')
+parser.add_argument('-e', '--email_id', dest='email_id', type=str, default=None,
+                    help='Email to deliver the notification')
 requiredNamed = parser.add_argument_group('required named arguments')
 requiredNamed.add_argument('-m', '--movie_name', dest='movie_name', type=str, help='Name of the movie to search for',
                            required=True)
@@ -57,6 +60,8 @@ def get_show_details():
 def say(text):
     engine.say(text)
     engine.runAndWait()
+    if email_id is not None:
+        send_email(email_id, 'Found movie', '<html><body><h1>%s</h1></body></html>' % text)
 
 
 # noinspection PyShadowingNames
@@ -65,8 +70,9 @@ def track_tickets(movie_name, connection_timeouts=0):
         show_details_json = get_show_details()
         events = show_details_json.get('ShowDetails')[0].get('Event')
         for event in events:
-            if str(event.get('EventTitle')).lower().__contains__(movie_name):
-                say('Found movie')
+            movie = str(event.get('EventTitle'))
+            if movie.lower().__contains__(movie_name):
+                say('Found movie: ' + movie)
                 exit(0)
         logging.info('Movie is not available yet. Will try again in %d secs' % sleep_time_in_secs)
         time.sleep(sleep_time_in_secs)
@@ -84,6 +90,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     movie_name = args.movie_name.lower()
     movie_url = args.movie_url
+    email_id = args.email_id
     sleep_time_in_secs = args.sleep_time_in_secs
     max_connection_timeouts = args.max_connection_timeouts
     logging.info('Looking for movie: ' + movie_name)
