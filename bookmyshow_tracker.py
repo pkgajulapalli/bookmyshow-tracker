@@ -61,7 +61,8 @@ def say(text):
     engine.say(text)
     engine.runAndWait()
     if email_id is not None:
-        send_email(email_id, 'Found movie', '<html><body><h1>%s</h1></body></html>' % text)
+        send_email(email_id, 'Found movie', '<html><body><h1>%s</h1><a href="%s">Check here</a></body></html>' %
+                   (text, movie_url))
 
 
 # noinspection PyShadowingNames
