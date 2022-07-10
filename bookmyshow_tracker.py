@@ -32,6 +32,8 @@ requiredNamed.add_argument('-u', '--url', dest='movie_url', type=str, required=T
 requiredNamed.add_argument('-c', '--max_connection_timeouts', dest='max_connection_timeouts', type=int, default=10,
                            help='Maximum number of connection timeouts before failing')
 
+show_details_key = 'ShowDetails'
+
 
 def get_headers():
     return {
@@ -47,7 +49,7 @@ def get_show_details():
     page_content = BeautifulSoup(response.content, features='lxml')
     script_elements = page_content.find_all('script')
     for script_element in script_elements:
-        if script_element.text.__contains__('ShowDetails'):
+        if script_element.text.__contains__(show_details_key):
             show_details_text = script_element.text
             for line in show_details_text.splitlines():
                 if line.__contains__('var UAPI'):
@@ -65,11 +67,18 @@ def say(text):
                    (text, movie_url))
 
 
+def get_date_from_url():
+    fields = movie_url.split('/')
+    return fields[len(fields) - 1]
+
+
 # noinspection PyShadowingNames
 def track_tickets(movie_name, connection_timeouts=0):
     try:
         show_details_json = get_show_details()
-        events = show_details_json.get('ShowDetails')[0].get('Event')
+        show_details = show_details_json.get(show_details_key)[0]
+        show_date = show_details.get('Date')
+        events = show_details.get('Event') if show_date == get_date_from_url() else []
         for event in events:
             movie = str(event.get('EventTitle'))
             if movie.lower().__contains__(movie_name):
